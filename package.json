@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "react-secure-storage": "^1.0.22"
+  }
+}

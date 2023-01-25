@@ -60,7 +60,7 @@ return static function (RouteBuilder $routes) {
         // business routes
         $builder->connect("/business/getall", ["controller" => "Business", "action" => "getAll"]);
         $builder->connect("/business/getbyid", ["controller" => "Business", "action" => "getById"]);
-        $builder->connect("/business/add", ["controller" => "Business", "action" => "createUser"]);
+        $builder->connect("/business/add", ["controller" => "Business", "action" => "createBusiness"]);
     });
 
     $routes->setRouteClass(DashedRoute::class);

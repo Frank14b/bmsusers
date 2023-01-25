@@ -48,6 +48,10 @@ class BranchsTable extends Table
             'foreignKey' => 'user_id',
             'joinType' => 'INNER',
         ]);
+        $this->belongsTo('Business', [
+            'foreignKey' => 'busines_id',
+            'joinType' => 'INNER',
+        ]);
         $this->hasMany('UserBranchs', [
             'foreignKey' => 'branch_id',
         ]);

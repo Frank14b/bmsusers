@@ -25,6 +25,12 @@ class BusinessController extends AppController
         $this->loadModel("Branchs");
     }
 
+    public function beforeFilter(\Cake\Event\EventInterface $event)
+    {
+        parent::beforeFilter($event);
+        $this->Authentication->addUnauthenticatedActions(['test']);
+    }
+
     public function getAll()
     {
         $this->request->allowMethod(["OPTIONS", "POST"]);

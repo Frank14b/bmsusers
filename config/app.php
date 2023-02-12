@@ -421,4 +421,15 @@ return [
     'Session' => [
         'defaults' => 'php',
     ],
+
+    'Cors' => [
+        // My Config
+        // Accept all origins
+        'AllowOrigin' => '*',
+        'AllowCredentials' => true,
+        // accept all headers
+        'AllowHeaders' => true,
+        // accept many headers
+        'AllowHeaders' => ['authorization'],
+    ]
 ];

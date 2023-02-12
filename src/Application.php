@@ -35,6 +35,25 @@ use Authentication\AuthenticationServiceProviderInterface;
 use Authentication\Middleware\AuthenticationMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
 
+// Allow from any origin
+if (isset($_SERVER['HTTP_ORIGIN'])) {
+    // Decide if the origin in $_SERVER['HTTP_ORIGIN'] is one
+    // you want to allow, and if so:
+    header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Max-Age: 86400');    // cache for 1 day
+}
+
+// Access-Control headers are received during OPTIONS requests
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']))
+        // may also be using PUT, PATCH, HEAD etc
+        header("Access-Control-Allow-Methods: GET, POST, OPTIONS");         
+    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']))
+        header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
+    exit(0);
+}
+
 /**
  * Application setup class.
  *
@@ -56,6 +75,10 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         if (PHP_SAPI === 'cli') {
             $this->bootstrapCli();
         } else {
+
+            $this->addPlugin('Cors');
+            $this->addPlugin('Authentication');
+
             FactoryLocator::add(
                 'Table',
                 (new TableLocator())->allowFallbackClass(false)
@@ -115,10 +138,11 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
                     ->withHeader('Access-Control-Allow-Credentials', 'true')
                     ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With')
                     ->withHeader('Access-Control-Allow-Headers', 'Content-Type')
+                    ->withHeader('Access-Control-Allow-Type', 'authorization')
+                    ->withHeader('Access-Control-Allow-Type', 'application/x-www-form-urlencoded')
                     ->withHeader('Access-Control-Allow-Type', 'application/json')
                     ->withStatus(200);
             });
-
         // Cross Site Request Forgery (CSRF) Protection Middleware
         // https://book.cakephp.org/4/en/security/csrf.html#cross-site-request-forgery-csrf-middleware
         // ->add(new CsrfProtectionMiddleware([
@@ -136,8 +160,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
      * @link https://book.cakephp.org/4/en/development/dependency-injection.html#dependency-injection
      */
     public function services(ContainerInterface $container): void
-    {
-    }
+    {}
 
     /**
      * Bootstrapping for CLI application.
@@ -151,8 +174,6 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         $this->addOptionalPlugin('Cake/Repl');
         $this->addOptionalPlugin('Bake');
         $this->addPlugin('Migrations');
-        $this->addPlugin('Authentication');
-
         // Load more plugins here
     }
 

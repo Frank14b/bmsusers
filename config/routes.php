@@ -49,6 +49,7 @@ return static function (RouteBuilder $routes) {
         $builder->applyMiddleware();
         $builder->setExtensions(['json', 'xml', ""]);
         // Connect API actions here.
+        // $builder->connect("/signapp", ["controller" => "Users", "action" => "signapp"]);
 
         // users routes
         $builder->connect("/users/signup", ["controller" => "Users", "action" => "register"]);

@@ -34,6 +34,12 @@ class UsersController extends AppController
         $this->Authentication->addUnauthenticatedActions(['register', 'login']);
     }
 
+    // public function signapp() 
+    // {
+    //     $this->request->allowMethod(["OPTIONS", "POST"]);
+    //     return $this->response->withType('application/json')->withStringBody(json_encode(true));
+    // }
+
     // register new user
     public function register()
     {

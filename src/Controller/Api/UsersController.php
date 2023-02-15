@@ -8,6 +8,7 @@ use App\Controller\AppController;
 use Cake\I18n\I18n;
 use Cake\I18n\Time;
 use Cake\Mailer\Email;
+use Exception;
 use Firebase\JWT\JWT;
 
 /**
@@ -125,7 +126,7 @@ class UsersController extends AppController
             //code...
             $user = $this->Auth->identify();
             // regardless of POST or GET, redirect if user is logged in
-            if ($user) {
+            if ($user && $user['status'] == 1) {
                 $result = [
                     "status" => true,
                     "message" => "get user",
@@ -206,7 +207,8 @@ class UsersController extends AppController
             $result = [
                 "status" => $status,
                 "message" => $message,
-                "data" => $data
+                "data" => $data,
+                "err" => $empObject->getErrors(),
             ];
 
             return $this->response->withType('application/json')->withStringBody(json_encode($result));
@@ -241,7 +243,119 @@ class UsersController extends AppController
         return $this->response->withType('application/json')->withStringBody(json_encode($result));
     }
 
-    public function generateUserToken($userid) {
+    public function update()
+    {
+        $this->request->allowMethod(["OPTIONS", "POST"]);
+
+        try {
+            if ($this->request->getData("id") == null) {
+                $result = [
+                    "status" => false,
+                    "message" => "user's id is required"
+                ];
+                return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            }
+    
+            $entity = $this->Users->get($this->request->getData("id"));
+            
+            if ($entity) {
+                $formData = $this->request->getData();
+                $empObject = $this->Users->patchEntity($entity, $formData);
+    
+                if ($rs = $this->Users->update($empObject)) {
+                    // success response
+                    $result = [
+                        "status" => true,
+                        "message" => "User has been updated",
+                        "data" => $rs,
+                    ];
+                } else {
+                    // error response
+                    $result = [
+                        "status" => false,
+                        "message" => "Failed to update user",
+                        "data" => $rs,
+                        "err" => $empObject->getErrors(),
+                    ];
+                }
+    
+                return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            } else {
+                $result = [
+                    "status" => false,
+                    "message" => "user not found"
+                ];
+                return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            }
+        } catch(\Throwable $th) {
+            $result = [
+                "status" => false,
+                "message" => "Error or user not found",
+                "err" => $th
+            ];
+            return $this->response->withType('application/json')->withStringBody(json_encode($result));
+        } 
+    }
+
+    public function delete()
+    {
+        $this->request->allowMethod(["OPTIONS", "POST"]);
+
+        try {
+            if ($this->request->getData("id") == null) {
+                $result = [
+                    "status" => false,
+                    "message" => "user's id is required"
+                ];
+                return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            }
+    
+            $entity = $this->Users->get($this->request->getData("id"));
+            
+            if ($entity) {
+                $this->request = $this->request->withData('status', 2);
+                $formData = $this->request->getData();
+                $entity->username = "dl__".$entity->username;
+                $entity->email = "dl__".$entity->email;
+                $empObject = $this->Users->patchEntity($entity, $formData);
+    
+                if ($rs = $this->Users->update($empObject)) {
+                    // success response
+                    $result = [
+                        "status" => true,
+                        "message" => "User has been deleted",
+                        "data" => $rs,
+                    ];
+                } else {
+                    // error response
+                    $result = [
+                        "status" => false,
+                        "message" => "Failed to delete user",
+                        "data" => $rs,
+                        "err" => $empObject->getErrors(),
+                    ];
+                }
+    
+                return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            } else {
+                $result = [
+                    "status" => false,
+                    "message" => "user not found"
+                ];
+                return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            }
+        } catch(\Throwable $th) {
+            $result = [
+                "status" => false,
+                "message" => "Error or user not found",
+                "err" => $th
+            ];
+            return $this->response->withType('application/json')->withStringBody(json_encode($result));
+        } 
+    }
+
+    public function generateUserToken($userid)
+    {
         $payload = [
             'iss' => 'bmsusers',
             'sub' => $userid,

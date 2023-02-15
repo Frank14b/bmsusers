@@ -66,13 +66,50 @@ class UsersTable extends Table
         return $validator
             ->notEmpty('email', 'An email is required')
             ->email('email')
+            ->add('email', 'valid-email', [
+                'rule' => ['rule' => 'email'],
+                'message' => 'custom@example.com'
+            ])
             ->notEmpty('username', 'Username is required')
             ->notEmpty('password', 'Password is required')
+            ->add('password', 'length', ['rule' => ['lengthBetween', 8, 100]])
             ->notEmpty('firstname', 'Firstname is required')
             ->notEmpty('role', 'A role is required')
             ->add('role', 'inList', [
                 'rule' => ['inList', ['1', '2']],
                 'message' => 'Please enter a valid role'
             ]);
+    }
+
+    public function buildRules(RulesChecker $rules): RulesChecker
+    {
+        $rules->addCreate($rules->isUnique(['email'], 'User Email already used'));
+
+        $rules->addCreate($rules->isUnique(['username'], 'User name already used'));
+
+        // Add a rule that is applied for create and update operations
+        $rules->add(function ($entity, $options) use ($rules) {
+            // Return a boolean to indicate pass/failure
+            // if ($entity->role == "email") {
+            //     $rules->isUnique(['email']);
+            // }
+        });
+
+        // Add a rule for create.
+        $rules->addCreate(function ($entity, $options) {
+            // Return a boolean to indicate pass/failure
+        }, 'ruleName');
+
+        // Add a rule for update
+        $rules->addUpdate(function ($entity, $options) {
+            // Return a boolean to indicate pass/failure
+        }, 'ruleName');
+
+        // Add a rule for the deleting.
+        $rules->addDelete(function ($entity, $options) {
+            // Return a boolean to indicate pass/failure
+        }, 'ruleName');
+
+        return $rules;
     }
 }

@@ -57,6 +57,8 @@ return static function (RouteBuilder $routes) {
         $builder->connect("/users/getall", ["controller" => "Users", "action" => "getAll"]);
         $builder->connect("/users/getbyid", ["controller" => "Users", "action" => "getById"]);
         $builder->connect("/users/add", ["controller" => "Users", "action" => "createUser"]);
+        $builder->connect("/users/update", ["controller" => "Users", "action" => "update"]);
+        $builder->connect("/users/remove", ["controller" => "Users", "action" => "delete"]);
         $builder->connect("/users/getbranchs", ["controller" => "UserBranchs", "action" => "getBranchs"]);
         //
         // business routes

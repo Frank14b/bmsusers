@@ -134,6 +134,7 @@ class UserBranchsController extends AppController
                     // error response
                     $status = false;
                     $message = "Failed to add user to the branch";
+                    $data = "";
                 }
             }
 

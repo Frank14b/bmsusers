@@ -52,5 +52,9 @@ class UserBranchsTable extends Table
             'foreignKey' => 'role_id',
             'joinType' => 'INNER',
         ]);
+        $this->belongsTo('Branchs', [
+            'foreignKey' => 'branch_id',
+            'joinType' => 'INNER',
+        ]);
     }
 }

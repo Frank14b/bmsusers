@@ -39,5 +39,6 @@ class UserBranch extends Entity
         'updated_at' => true,
         'user' => true,
         'role' => true,
+        'branch' => true,
     ];
 }

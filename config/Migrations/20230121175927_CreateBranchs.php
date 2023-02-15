@@ -72,7 +72,7 @@ class CreateBranchs extends AbstractMigration
             "default" => 'CURRENT_TIMESTAMP'
         ]);
 
-        $table->addIndex(['name'], [ 'unique' => true ]);
+        $table->addIndex(['name'], [ 'unique' => false ]);
 
 
         $table->create();

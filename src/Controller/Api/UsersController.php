@@ -103,7 +103,8 @@ class UsersController extends AppController
             //throw $th;
             $result = [
                 "status" => false,
-                "message" => "An error occured"
+                "message" => "An error occured",
+                "error" => $th
             ];
 
             return $this->response->withType('application/json')->withStringBody(json_encode($result));
@@ -213,7 +214,8 @@ class UsersController extends AppController
             //throw $th;
             $result = [
                 "status" => false,
-                "message" => "An error occured"
+                "message" => "An error occured",
+                "error" => $th
             ];
 
             return $this->response->withType('application/json')->withStringBody(json_encode($result));
@@ -227,7 +229,7 @@ class UsersController extends AppController
         // form data
         $formData = $this->request->getData();
 
-        // email address check rules
+        //
         $empData = $this->Users->find();
 
         $result = [

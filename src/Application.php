@@ -45,13 +45,15 @@ if (isset($_SERVER['HTTP_ORIGIN'])) {
 }
 
 // Access-Control headers are received during OPTIONS requests
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']))
-        // may also be using PUT, PATCH, HEAD etc
-        header("Access-Control-Allow-Methods: GET, POST, OPTIONS");         
-    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']))
-        header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
-    exit(0);
+if (isset($_SERVER['REQUEST_METHOD'])) {
+    if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+        if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']))
+            // may also be using PUT, PATCH, HEAD etc
+            header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+        if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']))
+            header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
+        exit(0);
+    }
 }
 
 /**
@@ -160,7 +162,8 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
      * @link https://book.cakephp.org/4/en/development/dependency-injection.html#dependency-injection
      */
     public function services(ContainerInterface $container): void
-    {}
+    {
+    }
 
     /**
      * Bootstrapping for CLI application.

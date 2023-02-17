@@ -48,10 +48,10 @@ class User extends Entity
         'role' => true,
         'created_at' => true,
         'updated_at' => true,
-        'branchs' => true,
-        'business' => true,
-        'business_packages' => true,
-        'user_branchs' => true,
+        'branchs' => false,
+        'business' => false,
+        'business_packages' => false,
+        'user_branchs' => false,
     ];
 
     /**

@@ -83,32 +83,9 @@ class UsersTable extends Table
 
     public function buildRules(RulesChecker $rules): RulesChecker
     {
-        $rules->addCreate($rules->isUnique(['email'], 'User Email already used'));
+        $rules->add($rules->isUnique(['email'], 'User Email already used'));
 
-        $rules->addCreate($rules->isUnique(['username'], 'User name already used'));
-
-        // Add a rule that is applied for create and update operations
-        $rules->add(function ($entity, $options) use ($rules) {
-            // Return a boolean to indicate pass/failure
-            // if ($entity->role == "email") {
-            //     $rules->isUnique(['email']);
-            // }
-        });
-
-        // Add a rule for create.
-        $rules->addCreate(function ($entity, $options) {
-            // Return a boolean to indicate pass/failure
-        }, 'ruleName');
-
-        // Add a rule for update
-        $rules->addUpdate(function ($entity, $options) {
-            // Return a boolean to indicate pass/failure
-        }, 'ruleName');
-
-        // Add a rule for the deleting.
-        $rules->addDelete(function ($entity, $options) {
-            // Return a boolean to indicate pass/failure
-        }, 'ruleName');
+        $rules->add($rules->isUnique(['username'], 'User name already used'));
 
         return $rules;
     }

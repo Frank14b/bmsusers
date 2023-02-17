@@ -10,6 +10,7 @@ use Cake\I18n\Time;
 use Cake\Mailer\Email;
 use Exception;
 use Firebase\JWT\JWT;
+use App\Controller\Api\UserBranchsController;
 
 /**
  * Users Controller
@@ -20,6 +21,8 @@ use Firebase\JWT\JWT;
 
 class UsersController extends AppController
 {
+    protected $UserBranchsController;
+
     public function initialize(): void
     {
         parent::initialize();
@@ -27,6 +30,8 @@ class UsersController extends AppController
         $this->loadComponent('PO');
 
         $this->loadModel("Users");
+        $this->loadModel("UserBranchs");
+        $this->UserBranchsController = new UserBranchsController();
     }
 
     public function beforeFilter(\Cake\Event\EventInterface $event)
@@ -126,13 +131,22 @@ class UsersController extends AppController
             //code...
             $user = $this->Auth->identify();
             // regardless of POST or GET, redirect if user is logged in
-            if ($user && $user['status'] == 1) {
-                $result = [
-                    "status" => true,
-                    "message" => "get user",
-                    "data" => $user,
-                    'token' => $this->generateUserToken($user['id'])
-                ];
+            if ($user) {
+                if($user['status'] == 1) {
+                    $result = [
+                        "status" => true,
+                        "message" => "get user",
+                        "data" => $user,
+                        'token' => $this->generateUserToken($user['id'])
+                    ];
+                } else if($user['status'] != 2) {
+                    $result = [
+                        "status" => true,
+                        "message" => "Your account is disable please contact admin",
+                        "data" => []
+                    ];
+                }
+                
             } else {
                 $result = [
                     "status" => false,
@@ -160,15 +174,14 @@ class UsersController extends AppController
         $status = false;
         $message = "";
         $data = "";
+        $user_id = 0;
 
         try {
             //code...
-            // form data
-            $formData = $this->request->getData();
-
             // email address check rules
             $empData = $this->Users->find()->where([
-                "email" => $this->request->getData("email")
+                "email" => $this->request->getData("email"),
+                "status !=" => 2
             ]);
 
             if ($empData->count() > 0) {
@@ -178,7 +191,8 @@ class UsersController extends AppController
             } else {
                 // email address check rules
                 $empData = $this->Users->find()->where([
-                    "username" => $this->request->getData("username")
+                    "username" => $this->request->getData("username"),
+                    "status !=" => 2
                 ]);
 
                 if ($empData->count() > 0) {
@@ -188,14 +202,28 @@ class UsersController extends AppController
                 } else {
                     // insert new user
                     $empObject = $this->Users->newEmptyEntity();
+                    // form data
+                    $formData = $this->request->getData();
 
                     $empObject = $this->Users->patchEntity($empObject, $formData);
+
+                    if($this->request->getData("branchs") == null || sizeof($this->request->getData("branchs")) == 0) {
+                        $result = [
+                            "status" => false,
+                            "message" => "Branchs data not found or invalid branchs datas",
+                        ];
+            
+                        return $this->response->withType('application/json')->withStringBody(json_encode($result));
+                    }
 
                     if ($rs = $this->Users->save($empObject)) {
                         // success response
                         $status = true;
                         $message = "Users has been created";
                         $data = $rs;
+                        $user_id = $rs->id;
+
+                        $data = $this->UserBranchsController->addUserToBranchs($this->request->getData("branchs"), $rs->id);  // add user to branchs
                     } else {
                         // error response
                         $status = false;
@@ -208,7 +236,7 @@ class UsersController extends AppController
                 "status" => $status,
                 "message" => $message,
                 "data" => $data,
-                "err" => $empObject->getErrors(),
+                "err" => (isset($empObject)) ? $empObject->getErrors() : "",
             ];
 
             return $this->response->withType('application/json')->withStringBody(json_encode($result));
@@ -219,6 +247,11 @@ class UsersController extends AppController
                 "message" => "An error occured",
                 "error" => $th
             ];
+
+            if($user_id != 0) {
+                $user_data = $this->Users->get($user_id);
+                $this->Users->delete($user_data);
+            }
 
             return $this->response->withType('application/json')->withStringBody(json_encode($result));
         }
@@ -255,14 +288,22 @@ class UsersController extends AppController
                 ];
                 return $this->response->withType('application/json')->withStringBody(json_encode($result));
             }
+
+            if ($this->request->getData("status") != null && !in_array($this->request->getData("status"), [0,1])) {
+                $result = [
+                    "status" => false,
+                    "message" => "Invalid user status should be 0 : inactive or 1 : active"
+                ];
+                return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            }
     
             $entity = $this->Users->get($this->request->getData("id"));
             
-            if ($entity) {
+            if ($entity && (isset($entity->status) && $entity->status != 2)) {
                 $formData = $this->request->getData();
                 $empObject = $this->Users->patchEntity($entity, $formData);
     
-                if ($rs = $this->Users->update($empObject)) {
+                if ($rs = $this->Users->save($empObject)) {
                     // success response
                     $result = [
                         "status" => true,
@@ -312,19 +353,17 @@ class UsersController extends AppController
     
             $entity = $this->Users->get($this->request->getData("id"));
             
-            if ($entity) {
-                $this->request = $this->request->withData('status', 2);
-                $formData = $this->request->getData();
+            if ($entity && (isset($entity->status) && $entity->status != 2)) {
+
                 $entity->username = "dl__".$entity->username;
                 $entity->email = "dl__".$entity->email;
-                $empObject = $this->Users->patchEntity($entity, $formData);
+                $entity->status = 2;
     
-                if ($rs = $this->Users->update($empObject)) {
+                if ($rs = $this->Users->save($entity)) {
                     // success response
                     $result = [
                         "status" => true,
-                        "message" => "User has been deleted",
-                        "data" => $rs,
+                        "message" => "User has been deleted"
                     ];
                 } else {
                     // error response
@@ -332,7 +371,7 @@ class UsersController extends AppController
                         "status" => false,
                         "message" => "Failed to delete user",
                         "data" => $rs,
-                        "err" => $empObject->getErrors(),
+                        "err" => (isset($empObject)) ? $empObject->getErrors() : "",
                     ];
                 }
     
@@ -347,7 +386,7 @@ class UsersController extends AppController
         } catch(\Throwable $th) {
             $result = [
                 "status" => false,
-                "message" => "Error or user not found",
+                "message" => "Error or user not found.",
                 "err" => $th
             ];
             return $this->response->withType('application/json')->withStringBody(json_encode($result));

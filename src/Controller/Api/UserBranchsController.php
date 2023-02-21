@@ -11,24 +11,16 @@ use App\Controller\AppController;
  *
  * @property \App\Model\Table\UserBranchsTable $UserBranchs
  */
-class UserBranchsController extends AppController
+class UserBranchsController extends BaseApiController
 {
     public function initialize(): void
     {
         parent::initialize();
 
-        $this->loadComponent('PO');
-
         $this->loadModel("Branchs");
         $this->loadModel("Business");
         $this->loadModel("UserBranchs");
         $this->loadModel("Branchs");
-    }
-
-    public function beforeFilter(\Cake\Event\EventInterface $event)
-    {
-        parent::beforeFilter($event);
-        $this->Authentication->addUnauthenticatedActions(['addUserToBranchs']);
     }
 
     public function getUsers()
@@ -71,14 +63,14 @@ class UserBranchsController extends AppController
             //code...
             // check if data send
             // check user business
-            $conditions  = ['UserBranchs.user_id' => $this->request->getData('user_id')];
+            $conditions  = ['UserBranchs.user_id' => $this->request->getData('user_id'), 'Users.status' => 1];
             if ($this->request->getData('business_id') != null) {
                 $conditions = array_merge($conditions, ['Branchs.busines_id' => $this->request->getData('business_id')]);
             }
             if ($this->request->getData('branch_id') != null) {
                 $conditions = array_merge($conditions, ['UserBranchs.branch_id' => $this->request->getData('branch_id')]);
             }
-            $rsData = $this->UserBranchs->find()->where($conditions)->contain(['Branchs', 'Roles']);
+            $rsData = $this->UserBranchs->find()->where($conditions)->contain(['Branchs', 'Roles', 'Users']);
 
             $result = [
                 "status" => true,

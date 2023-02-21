@@ -9,14 +9,12 @@ use App\Controller\AppController;
  * Branch Controller
  *
  */
-class BranchController extends AppController
+class BranchController extends BaseApiController
 {
 
     public function initialize(): void
     {
         parent::initialize();
-
-        $this->loadComponent('PO');
 
         $this->loadModel("Branchs");
         $this->loadModel("Business");

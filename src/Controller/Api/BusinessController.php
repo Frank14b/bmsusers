@@ -11,13 +11,11 @@ use App\Controller\AppController;
  *
  * @property \App\Model\Table\BusinessTable $Business
  */
-class BusinessController extends AppController
+class BusinessController extends BaseApiController
 {
     public function initialize(): void
     {
         parent::initialize();
-
-        $this->loadComponent('PO');
 
         $this->loadModel("Business");
         $this->loadModel("BusinessPackages");

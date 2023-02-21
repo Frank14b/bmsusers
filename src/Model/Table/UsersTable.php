@@ -47,8 +47,9 @@ class UsersTable extends Table
         $this->setDisplayField('id');
         $this->setPrimaryKey('id');
 
-        $this->hasMany('Branchs', [
+        $this->hasMany('BranchOwner', [
             'foreignKey' => 'user_id',
+            'className' => 'Branchs'
         ]);
         $this->hasMany('Business', [
             'foreignKey' => 'user_id',
@@ -58,6 +59,9 @@ class UsersTable extends Table
         ]);
         $this->hasMany('UserBranchs', [
             'foreignKey' => 'user_id',
+        ]);
+        $this->belongsToMany('Branchs', [
+            'joinTable' => 'userbranchs'
         ]);
     }
 

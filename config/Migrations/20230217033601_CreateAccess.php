@@ -46,6 +46,12 @@ class CreateAccess extends AbstractMigration
             "default" => "1"
         ]);
 
+        // status
+        $table->addColumn("coverage", "enum", [
+            "values" => ["0", "1"], // 0 public, 1 private
+            "default" => "1"
+        ]);
+
         // created_at
         $table->addColumn("created_at", "timestamp", [
             "default" => 'CURRENT_TIMESTAMP'
@@ -55,6 +61,8 @@ class CreateAccess extends AbstractMigration
         $table->addColumn("updated_at", "timestamp", [
             "default" => 'CURRENT_TIMESTAMP'
         ]);
+
+        $table->addIndex(['title', 'middleware'], [ 'unique' => true ]);
 
         $table->create();
     }

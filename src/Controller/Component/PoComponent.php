@@ -21,7 +21,12 @@ class PoComponent extends Component
 
     public function passSecurity($pass)
     {
-        return sha1('#!Frank@2020' . $pass);
+        return crypt($pass, '#!Frank@2020');
+    }
+
+    public function checkPassSecurity($pass, $hash)
+    {
+        return password_verify($pass, $hash);
     }
 
     function WordWrap(&$text, $maxwidth)

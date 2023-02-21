@@ -19,7 +19,7 @@ use App\Controller\Api\UserBranchsController;
 
 //Code by Frank Donald Fontcha.
 
-class UsersController extends AppController
+class UsersController extends BaseApiController
 {
     protected $UserBranchsController;
 
@@ -27,24 +27,10 @@ class UsersController extends AppController
     {
         parent::initialize();
 
-        $this->loadComponent('PO');
-
         $this->loadModel("Users");
         $this->loadModel("UserBranchs");
         $this->UserBranchsController = new UserBranchsController();
     }
-
-    public function beforeFilter(\Cake\Event\EventInterface $event)
-    {
-        parent::beforeFilter($event);
-        $this->Authentication->addUnauthenticatedActions(['register', 'login']);
-    }
-
-    // public function signapp() 
-    // {
-    //     $this->request->allowMethod(["OPTIONS", "POST"]);
-    //     return $this->response->withType('application/json')->withStringBody(json_encode(true));
-    // }
 
     // register new user
     public function register()
@@ -262,10 +248,17 @@ class UsersController extends AppController
         $this->request->allowMethod(["OPTIONS", "POST"]);
 
         // form data
-        $formData = $this->request->getData();
+        // $formData = $this->request->getData();
+
+        $conditions = [
+            'status IN' => ($this->request->getData('status') != null && $this->request->getData('status') != "2") ? [strval($this->request->getData('status'))] : ["0", "1"],
+            'OR' => [
+                // ['Branchs.id' => $this->request->getData("branch_id"), 'Branchs.status' => 1]
+            ]
+        ];
 
         //
-        $empData = $this->Users->find();
+        $empData = $this->Users->find()->where($conditions)->contain(['Branchs', 'BranchOwner', 'Business']);
 
         $result = [
             "status" => true,

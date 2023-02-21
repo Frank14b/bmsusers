@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Controller\Api;
@@ -6,17 +7,19 @@ namespace App\Controller\Api;
 use App\Controller\AppController;
 
 /**
- * Roles Controller
+ * Access Controller
  *
- * @property \App\Model\Table\RolesTable $Roles
+ * @method \App\Model\Entity\Api/Acces[]|\Cake\Datasource\ResultSetInterface paginate($object = null, array $settings = [])
  */
-class RolesController extends BaseApiController
+class AccessController extends BaseApiController
 {
     public function initialize(): void
     {
         parent::initialize();
 
-        $this->loadModel("Roles");
+        $this->loadComponent('PO');
+
+        $this->loadModel("Access");
     }
 
     public function beforeFilter(\Cake\Event\EventInterface $event)
@@ -33,16 +36,28 @@ class RolesController extends BaseApiController
             //code...
             // check if data send
             // check role
-            $rsData = $this->Roles->find()->where(
-                [
-                    'Roles.business_id' => $this->request->getData('business_id'),
-                    'Roles.status' => $this->request->getData("status")
-                ]
+            $conditions = [
+                'Access.status' => ($this->request->getData("status") != null) ? (int) $this->request->getData("status") : 1,
+                'Access.coverage IN' => [1]
+            ];
+
+            if ($this->request->getData("coverage") != null) {
+                if (strtolower(strval($this->request->getData("coverage"))) == "all") { // send coverage all to get all api route access from db
+                    $conditions['Access.coverage IN'] = ["0", "1"];
+                }
+            }
+
+            if ($this->request->getData("id") != null) {
+                $conditions['Access.id'] = (int) $this->request->getData("id");
+            }
+
+            $rsData = $this->Access->find()->where(
+                $conditions
             );
 
             $result = [
                 "status" => true,
-                "message" => "get roles data",
+                "message" => "get Access data",
                 "data" => $rsData,
             ];
 
@@ -58,7 +73,7 @@ class RolesController extends BaseApiController
         }
     }
 
-    public function createRoles()
+    public function createAccess()
     {
         $this->request->allowMethod(["OPTIONS", "POST"]);
 
@@ -70,31 +85,34 @@ class RolesController extends BaseApiController
             //code...
             // form data
             // title check rules
-            $empData = $this->Roles->find()->where([
-                "title" => $this->request->getData("title"),
-                'business_id' => $this->request->getData("business_id")
+            $empData = $this->Access->find()->where([
+                "OR" => [
+                    ["title" => $this->request->getData("title")],
+                    ["middleware" => $this->request->getData("middleware")]
+                ],
+                'status' => 1
             ]);
 
             if ($empData->count() > 0) {
                 // already exists
                 $status = false;
-                $message = "Role name already used";
+                $message = "Access already created";
             } else {
                 // insert new role
-                $empObject = $this->Roles->newEmptyEntity();
+                $empObject = $this->Access->newEmptyEntity();
 
                 $formData = $this->request->getData();
-                $empObject = $this->Roles->patchEntity($empObject, $formData);
+                $empObject = $this->Access->patchEntity($empObject, $formData);
 
-                if ($rs = $this->Roles->save($empObject)) {
+                if ($rs = $this->Access->save($empObject)) {
                     // success response
                     $status = true;
-                    $message = "Role has been created";
+                    $message = "Access has been created";
                     $data = $rs;
                 } else {
                     // error responses
                     $status = false;
-                    $message = "Failed to create role";
+                    $message = "Failed to create access";
                 }
             }
 
@@ -124,9 +142,9 @@ class RolesController extends BaseApiController
 
             // form data
             // email address check rules
-            $empData = $this->Roles->find()->where([
-                'Roles.id' => $this->request->getData("role_id"),
-                'Roles.status' => 1
+            $empData = $this->Access->find()->where([
+                'Access.id' => $this->request->getData("role_id"),
+                'Access.status' => 1
             ]);
 
             $result = [

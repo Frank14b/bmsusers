@@ -78,6 +78,11 @@ return static function (RouteBuilder $routes) {
         $builder->connect("/roles/getall", ["controller" => "Roles", "action" => "getAll"]);
         $builder->connect("/roles/getbyid", ["controller" => "Roles", "action" => "getById"]);
         $builder->connect("/roles/add", ["controller" => "Roles", "action" => "createRoles"]);
+        //
+        // access routes
+        $builder->connect("/access/getall", ["controller" => "Access", "action" => "getAll"]);
+        $builder->connect("/access/getbyid", ["controller" => "Access", "action" => "getById"]);
+        $builder->connect("/access/add", ["controller" => "Access", "action" => "createAccess"]);
     });
 
     $routes->setRouteClass(DashedRoute::class);

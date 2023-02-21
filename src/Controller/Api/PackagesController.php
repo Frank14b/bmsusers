@@ -10,6 +10,6 @@ use App\Controller\AppController;
  *
  * @property \App\Model\Table\PackagesTable $Packages
  */
-class PackagesController extends AppController
+class PackagesController extends BaseApiController
 {
 }

@@ -11,6 +11,7 @@ use Cake\Mailer\Email;
 use Exception;
 use Firebase\JWT\JWT;
 use App\Controller\Api\UserBranchsController;
+use App\Controller\Api\Common\UsersCommonController;
 
 /**
  * Users Controller
@@ -22,6 +23,7 @@ use App\Controller\Api\UserBranchsController;
 class UsersController extends BaseApiController
 {
     protected $UserBranchsController;
+    protected $UsersCommonController;
 
     public function initialize(): void
     {
@@ -30,6 +32,7 @@ class UsersController extends BaseApiController
         $this->loadModel("Users");
         $this->loadModel("UserBranchs");
         $this->UserBranchsController = new UserBranchsController();
+        $this->UsersCommonController = new UsersCommonController();
     }
 
     // register new user
@@ -40,6 +43,7 @@ class UsersController extends BaseApiController
         $status = false;
         $message = "";
         $data = "";
+        $error = "";
 
         try {
             //code...
@@ -51,10 +55,19 @@ class UsersController extends BaseApiController
                 "email" => $this->request->getData("email")
             ]);
 
+            if (!$this->PO->passwordValidator($this->request->getData("password"))) {
+                $result = [
+                    "status" => $status,
+                    "error" => "Password should have at least 1 lowercase letter, 1 uppercase letter, 1 digit, 1 special character, and at least 8 characters long"
+                ];
+                return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            }
+
             if ($empData->count() > 0) {
                 // already exists
                 $status = false;
                 $message = "Email address already exists";
+                $error = (isset($empObject)) ? $empObject->getErrors() : "";
             } else {
                 // email address check rules
                 $empData = $this->Users->find()->where([
@@ -65,6 +78,7 @@ class UsersController extends BaseApiController
                     // already exists
                     $status = false;
                     $message = "UserName already exists";
+                    $error = (isset($empObject)) ? $empObject->getErrors() : "";
                 } else {
                     // insert new user
                     $empObject = $this->Users->newEmptyEntity();
@@ -80,6 +94,7 @@ class UsersController extends BaseApiController
                         // error response
                         $status = false;
                         $message = "Failed to create user";
+                        $error = (isset($empObject)) ? $empObject->getErrors() : "";
                     }
                 }
             }
@@ -87,7 +102,8 @@ class UsersController extends BaseApiController
             $result = [
                 "status" => $status,
                 "message" => $message,
-                "data" => $data
+                "data" => $data,
+                "error" => $error
             ];
 
             return $this->response->withType('application/json')->withStringBody(json_encode($result));
@@ -108,7 +124,7 @@ class UsersController extends BaseApiController
         $this->loadComponent('Auth', [
             'authenticate' => [
                 'Form' => [
-                    'fields' => ['username' => 'email', 'password' => 'password']
+                    'fields' => ['username' => 'email', 'password' => 'password'],
                 ]
             ]
         ]);
@@ -118,21 +134,20 @@ class UsersController extends BaseApiController
             $user = $this->Auth->identify();
             // regardless of POST or GET, redirect if user is logged in
             if ($user) {
-                if($user['status'] == 1) {
+                if ($user['status'] == 1) {
                     $result = [
                         "status" => true,
                         "message" => "get user",
                         "data" => $user,
                         'token' => $this->generateUserToken($user['id'])
                     ];
-                } else if($user['status'] != 2) {
+                } else if ($user['status'] != 2) {
                     $result = [
                         "status" => true,
                         "message" => "Your account is disable please contact admin",
                         "data" => []
                     ];
                 }
-                
             } else {
                 $result = [
                     "status" => false,
@@ -170,6 +185,14 @@ class UsersController extends BaseApiController
                 "status !=" => 2
             ]);
 
+            if (!$this->PO->passwordValidator($this->request->getData("password"))) {
+                $result = [
+                    "status" => $status,
+                    "error" => "Password should have at least 1 lowercase letter, 1 uppercase letter, 1 digit, 1 special character, and at least 8 characters long"
+                ];
+                return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            }
+
             if ($empData->count() > 0) {
                 // already exists
                 $status = false;
@@ -193,12 +216,12 @@ class UsersController extends BaseApiController
 
                     $empObject = $this->Users->patchEntity($empObject, $formData);
 
-                    if($this->request->getData("branchs") == null || sizeof($this->request->getData("branchs")) == 0) {
+                    if ($this->request->getData("branchs") == null || sizeof($this->request->getData("branchs")) == 0) {
                         $result = [
                             "status" => false,
                             "message" => "Branchs data not found or invalid branchs datas",
                         ];
-            
+
                         return $this->response->withType('application/json')->withStringBody(json_encode($result));
                     }
 
@@ -209,7 +232,7 @@ class UsersController extends BaseApiController
                         $data = $rs;
                         $user_id = $rs->id;
 
-                        $data = $this->UserBranchsController->addUserToBranchs($this->request->getData("branchs"), $rs->id);  // add user to branchs
+                        $data = $this->UsersCommonController->addUserToBranchs($this->request->getData("branchs"), $rs->id);  // add user to branchs
                     } else {
                         // error response
                         $status = false;
@@ -234,7 +257,7 @@ class UsersController extends BaseApiController
                 "error" => $th
             ];
 
-            if($user_id != 0) {
+            if ($user_id != 0) {
                 $user_data = $this->Users->get($user_id);
                 $this->Users->delete($user_data);
             }
@@ -245,28 +268,45 @@ class UsersController extends BaseApiController
 
     public function getAll()
     {
-        $this->request->allowMethod(["OPTIONS", "POST"]);
+        try {
+            $this->request->allowMethod(["OPTIONS", "POST"]);
 
-        // form data
-        // $formData = $this->request->getData();
+            $array_users_id = [];
 
-        $conditions = [
-            'status IN' => ($this->request->getData('status') != null && $this->request->getData('status') != "2") ? [strval($this->request->getData('status'))] : ["0", "1"],
-            'OR' => [
-                // ['Branchs.id' => $this->request->getData("branch_id"), 'Branchs.status' => 1]
-            ]
-        ];
+            $getuserbranchs = $this->UsersCommonController->getUserByBranchs($this->request);
+            if ($getuserbranchs) {
+                $array_users_id = array_merge($array_users_id, $getuserbranchs);
+            }
 
-        //
-        $empData = $this->Users->find()->where($conditions)->contain(['Branchs', 'BranchOwner', 'Business']);
+            $getowner = $this->UsersCommonController->getBusinessOwnerByBranchId($this->request);
+            if ($getowner && isset($getowner->busines->user_id)) {
+                array_push($array_users_id, $getowner->busines->user_id);
+            }
 
-        $result = [
-            "status" => true,
-            "message" => "get data",
-            "data" => $empData
-        ];
+            $conditions = [
+                'Users.id !=' => $this->request->getData("user_id"),
+                'Users.id IN' => $array_users_id,
+                'Users.status IN' => (strval($this->request->getData('status')) != null && strval($this->request->getData('status')) != "2") ? [$this->request->getData('status')] : [0, 1]
+            ];
 
-        return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            //
+            $empData = $this->Users->find()->where($conditions)->contain(['Branchs', 'BranchOwner']);
+
+            $result = [
+                "status" => true,
+                "message" => "get data",
+                "data" => $empData
+            ];
+
+            return $this->response->withType('application/json')->withStringBody(json_encode($result));
+        } catch (\Throwable $th) {
+            $result = [
+                "status" => false,
+                "message" => "Error or users not found",
+                "err" => $th
+            ];
+            return $this->response->withType('application/json')->withStringBody(json_encode($result));
+        }
     }
 
     public function update()
@@ -282,20 +322,20 @@ class UsersController extends BaseApiController
                 return $this->response->withType('application/json')->withStringBody(json_encode($result));
             }
 
-            if ($this->request->getData("status") != null && !in_array($this->request->getData("status"), [0,1])) {
+            if ($this->request->getData("status") != null && !in_array($this->request->getData("status"), [0, 1])) {
                 $result = [
                     "status" => false,
                     "message" => "Invalid user status should be 0 : inactive or 1 : active"
                 ];
                 return $this->response->withType('application/json')->withStringBody(json_encode($result));
             }
-    
+
             $entity = $this->Users->get($this->request->getData("id"));
-            
+
             if ($entity && (isset($entity->status) && $entity->status != 2)) {
                 $formData = $this->request->getData();
                 $empObject = $this->Users->patchEntity($entity, $formData);
-    
+
                 if ($rs = $this->Users->save($empObject)) {
                     // success response
                     $result = [
@@ -312,7 +352,7 @@ class UsersController extends BaseApiController
                         "err" => $empObject->getErrors(),
                     ];
                 }
-    
+
                 return $this->response->withType('application/json')->withStringBody(json_encode($result));
             } else {
                 $result = [
@@ -321,14 +361,14 @@ class UsersController extends BaseApiController
                 ];
                 return $this->response->withType('application/json')->withStringBody(json_encode($result));
             }
-        } catch(\Throwable $th) {
+        } catch (\Throwable $th) {
             $result = [
                 "status" => false,
                 "message" => "Error or user not found",
                 "err" => $th
             ];
             return $this->response->withType('application/json')->withStringBody(json_encode($result));
-        } 
+        }
     }
 
     public function delete()
@@ -343,15 +383,15 @@ class UsersController extends BaseApiController
                 ];
                 return $this->response->withType('application/json')->withStringBody(json_encode($result));
             }
-    
+
             $entity = $this->Users->get($this->request->getData("id"));
-            
+
             if ($entity && (isset($entity->status) && $entity->status != 2)) {
 
-                $entity->username = "dl__".$entity->username;
-                $entity->email = "dl__".$entity->email;
+                $entity->username = "dl__" . $entity->username;
+                $entity->email = "dl__" . $entity->email;
                 $entity->status = 2;
-    
+
                 if ($rs = $this->Users->save($entity)) {
                     // success response
                     $result = [
@@ -367,7 +407,7 @@ class UsersController extends BaseApiController
                         "err" => (isset($empObject)) ? $empObject->getErrors() : "",
                     ];
                 }
-    
+
                 return $this->response->withType('application/json')->withStringBody(json_encode($result));
             } else {
                 $result = [
@@ -376,14 +416,14 @@ class UsersController extends BaseApiController
                 ];
                 return $this->response->withType('application/json')->withStringBody(json_encode($result));
             }
-        } catch(\Throwable $th) {
+        } catch (\Throwable $th) {
             $result = [
                 "status" => false,
                 "message" => "Error or user not found.",
                 "err" => $th
             ];
             return $this->response->withType('application/json')->withStringBody(json_encode($result));
-        } 
+        }
     }
 
     public function generateUserToken($userid)

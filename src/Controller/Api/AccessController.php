@@ -143,7 +143,7 @@ class AccessController extends BaseApiController
             // form data
             // email address check rules
             $empData = $this->Access->find()->where([
-                'Access.id' => $this->request->getData("role_id"),
+                'Access.id' => $this->request->getData("id"),
                 'Access.status' => 1
             ]);
 

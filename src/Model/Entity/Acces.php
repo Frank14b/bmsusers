@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Model\Entity;
@@ -36,8 +37,18 @@ class Acces extends Entity
         'apiroute' => true,
         'description' => true,
         'status' => true,
+        'coverage' => true,
         'created_at' => true,
         'updated_at' => true,
         'roleaccess' => true,
+    ];
+    /**
+     * Fields that are excluded from JSON versions of the entity.
+     *
+     * @var array<string>
+     */
+    protected $_hidden = [
+        'coverage',
+        'apiroute'
     ];
 }

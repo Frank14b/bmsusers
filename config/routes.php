@@ -60,6 +60,7 @@ return static function (RouteBuilder $routes) {
         $builder->connect("/users/update", ["controller" => "Users", "action" => "update"]);
         $builder->connect("/users/remove", ["controller" => "Users", "action" => "delete"]);
         $builder->connect("/users/getbranchs", ["controller" => "UserBranchs", "action" => "getBranchs"]);
+        $builder->connect("/users/getaccess", ["controller" => "Roleaccess", "action" => "getUserAccess"]);
         //
         // business routes
         $builder->connect("/business/getall", ["controller" => "Business", "action" => "getAll"]);
@@ -78,6 +79,7 @@ return static function (RouteBuilder $routes) {
         $builder->connect("/roles/getall", ["controller" => "Roles", "action" => "getAll"]);
         $builder->connect("/roles/getbyid", ["controller" => "Roles", "action" => "getById"]);
         $builder->connect("/roles/add", ["controller" => "Roles", "action" => "createRoles"]);
+        $builder->connect("/roles/addaccess", ["controller" => "Roleaccess", "action" => "addAccess"]);
         //
         // access routes
         $builder->connect("/access/getall", ["controller" => "Access", "action" => "getAll"]);

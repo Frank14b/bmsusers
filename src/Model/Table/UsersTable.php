@@ -76,7 +76,10 @@ class UsersTable extends Table
             ])
             ->notEmpty('username', 'Username is required')
             ->notEmpty('password', 'Password is required')
-            ->add('password', 'length', ['rule' => ['lengthBetween', 8, 100]])
+            ->add('password', 'length', [
+                'rule' => ['lengthBetween', 8, 100],
+                'message' => 'Password Length should be >= 8'
+            ])
             ->notEmpty('firstname', 'Firstname is required')
             ->notEmpty('role', 'A role is required')
             ->add('role', 'inList', [
@@ -88,6 +91,23 @@ class UsersTable extends Table
     public function buildRules(RulesChecker $rules): RulesChecker
     {
         $rules->add($rules->isUnique(['email'], 'User Email already used'));
+
+        // $rules->add(
+        //     function ($entity, $options) {
+        //         if ($entity->password) {
+        //             if (!preg_match('?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])(?=.{8,})', $entity->password)) {
+        //                 return false;
+        //             }
+        //         } else {
+        //             return false;
+        //         }
+        //     },
+        //     'ruleName',
+        //     [
+        //         'errorField' => 'validator',
+        //         'message' => 'Password should have at least 1 lowercase letter, 1 uppercase letter, 1 digit, 1 special character, and at least 8 characters long'
+        //     ]
+        // );
 
         $rules->add($rules->isUnique(['username'], 'User name already used'));
 

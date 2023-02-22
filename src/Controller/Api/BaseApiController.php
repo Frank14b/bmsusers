@@ -13,7 +13,7 @@ use App\Controller\AppController;
  */
 class BaseApiController extends AppController
 {
-    protected $connected_userid;
+    public $connected_userid;
 
     public function initialize(): void
     {
@@ -42,6 +42,8 @@ class BaseApiController extends AppController
             if(isset($auth[1])) {
                 $auth = base64_decode($auth[1]);
                 $this->connected_userid = json_decode($auth, true)['sub'];
+
+                $this->request = $this->request->withData("user_id", $this->connected_userid);
             }
         }
     }

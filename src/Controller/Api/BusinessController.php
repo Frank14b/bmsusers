@@ -40,13 +40,13 @@ class BusinessController extends BaseApiController
             $rsData = $this->Business->find()->where(
                 [
                     'Business.user_id' => $this->request->getData('user_id'),
-                    'Business.status' => $this->request->getData("status")
+                    'Business.status' => (strval($this->request->getData("status")) != null) ? $this->request->getData("status") : 1
                 ]
             );
             // check user branchs
             $userBranch = $this->UserBranchs->find('all', ['fields' => ['branch_id'], 'conditions' => [
                 'UserBranchs.user_id' => $this->request->getData('user_id'),
-                'UserBranchs.status' => $this->request->getData("status")
+                'UserBranchs.status' => (strval($this->request->getData("status")) != null) ? $this->request->getData("status") : 1
             ]]);
 
             if ($userBranch->count() == 0) {
@@ -93,6 +93,7 @@ class BusinessController extends BaseApiController
             //code...
             // form data
             // email address check rules
+
             $empData = $this->Business->find()->where([
                 "name" => $this->request->getData("name"),
                 'user_id' => $this->request->getData("user_id")
@@ -149,7 +150,7 @@ class BusinessController extends BaseApiController
             // form data
             // email address check rules
             $empData = $this->Business->find()->where([
-                'Business.id' => $this->request->getData("user_id"),
+                'Business.id' => $this->request->getData("id"),
                 'Business.status' => 1
             ]);
 

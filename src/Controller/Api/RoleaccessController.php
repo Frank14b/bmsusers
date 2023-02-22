@@ -3,20 +3,29 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Controller\AppController;
+use App\Controller\Api\BaseApiController;
+use App\Controller\Api\Common\AccessCommonController;
 
 /**
- * Roles Controller
+ * Roleaccess Controller
  *
- * @property \App\Model\Table\RolesTable $Roles
+ * @method \App\Model\Entity\Api/Roleacces[]|\Cake\Datasource\ResultSetInterface paginate($object = null, array $settings = [])
  */
-class RolesController extends BaseApiController
+class RoleaccessController extends BaseApiController
 {
+    protected $accessCommonController;
+
     public function initialize(): void
     {
         parent::initialize();
 
-        $this->loadModel("Roles");
+        $this->loadComponent('PO');
+
+        $this->loadModel("Access");
+        $this->loadModel("Roleaccess");
+        $this->loadModel("Branchs");
+
+        $this->accessCommonController = new AccessCommonController();
     }
 
     public function beforeFilter(\Cake\Event\EventInterface $event)
@@ -25,7 +34,7 @@ class RolesController extends BaseApiController
         $this->Authentication->addUnauthenticatedActions(['test']);
     }
 
-    public function getAll()
+    public function getUserAccess()
     {
         $this->request->allowMethod(["OPTIONS", "POST"]);
 
@@ -33,16 +42,26 @@ class RolesController extends BaseApiController
             //code...
             // check if data send
             // check role
-            $rsData = $this->Roles->find()->where(
-                [
-                    'Roles.business_id' => $this->request->getData('business_id'),
-                    'Roles.status' => $this->request->getData("status")
-                ]
-            );
+            $business_id = $this->accessCommonController->getBusinessIDbyBranch($this->request);
+
+            $user_role = $this->accessCommonController->getUserRoleByBranchID($this->request);
+
+            $conditions = [
+                'Roleaccess.status' => ($this->request->getData("status") != null) ? (int) $this->request->getData("status") : 1,
+                'Access.status' => 1,
+                'Access.coverage' => 1,
+                'Roles.status' => 1,
+                'Roles.business_id' => $business_id,
+                'Roleaccess.role_id' => $user_role
+            ];
+
+            $rsData = $this->Roleaccess->find()->where(
+                $conditions
+            )->contain(['Roles', 'Access']);
 
             $result = [
                 "status" => true,
-                "message" => "get roles data",
+                "message" => "get Access data",
                 "data" => $rsData,
             ];
 
@@ -58,7 +77,7 @@ class RolesController extends BaseApiController
         }
     }
 
-    public function createRoles()
+    public function addAccess()
     {
         $this->request->allowMethod(["OPTIONS", "POST"]);
 
@@ -70,71 +89,41 @@ class RolesController extends BaseApiController
             //code...
             // form data
             // title check rules
-            $empData = $this->Roles->find()->where([
-                "title" => $this->request->getData("title"),
-                'business_id' => $this->request->getData("business_id")
+            $empData = $this->Roleaccess->find()->where([
+                "OR" => [
+                    ["role_id" => $this->request->getData("role_id")],
+                    ["acces_id" => $this->request->getData("acces_id")]
+                ],
+                'status' => 1
             ]);
 
             if ($empData->count() > 0) {
                 // already exists
                 $status = false;
-                $message = "Role name already used";
+                $message = "Role Access already addedd";
             } else {
                 // insert new role
-                $empObject = $this->Roles->newEmptyEntity();
+                $empObject = $this->Roleaccess->newEmptyEntity();
 
                 $formData = $this->request->getData();
-                $empObject = $this->Roles->patchEntity($empObject, $formData);
+                $empObject = $this->Roleaccess->patchEntity($empObject, $formData);
 
-                if ($rs = $this->Roles->save($empObject)) {
+                if ($rs = $this->Roleaccess->save($empObject)) {
                     // success response
                     $status = true;
-                    $message = "Role has been created";
+                    $message = "Role Access has been added";
                     $data = $rs;
                 } else {
                     // error responses
                     $status = false;
-                    $message = "Failed to create role";
+                    $message = "Failed to add role access";
                 }
             }
 
             $result = [
                 "status" => $status,
                 "message" => $message,
-                "data" => $data,
-                "error" => (isset($empObject)) ? $empObject->getErrors() : ""
-            ];
-
-            return $this->response->withType('application/json')->withStringBody(json_encode($result));
-        } catch (\Throwable $th) {
-            //throw $th;
-            $result = [
-                "status" => false,
-                "message" => "An error occured",
-                "error" => $th
-            ];
-
-            return $this->response->withType('application/json')->withStringBody(json_encode($result));
-        }
-    }
-
-    public function getbyid()
-    {
-        try {
-            //code...
-            $this->request->allowMethod(["OPTIONS", "POST"]);
-
-            // form data
-            // email address check rules
-            $empData = $this->Roles->find()->where([
-                'Roles.id' => $this->request->getData("role_id"),
-                'Roles.status' => 1
-            ]);
-
-            $result = [
-                "status" => true,
-                "message" => "get data",
-                "data" => $empData
+                "data" => $data
             ];
 
             return $this->response->withType('application/json')->withStringBody(json_encode($result));

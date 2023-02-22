@@ -64,6 +64,7 @@ class RoleaccessTable extends Table
     {
         $validator
             ->integer('role_id')
+            ->requirePresence('role_id', 'create')
             ->notEmptyString('role_id');
 
         $validator

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Model\Table;
@@ -46,5 +47,20 @@ class RolesTable extends Table
         $this->hasMany('UserBranchs', [
             'foreignKey' => 'role_id',
         ]);
+    }
+
+
+    /**
+     * Returns a rules checker object that will be used for validating
+     * application integrity.
+     *
+     * @param \Cake\ORM\RulesChecker $rules The rules object to be modified.
+     * @return \Cake\ORM\RulesChecker
+     */
+    public function buildRules(RulesChecker $rules): RulesChecker
+    {
+        $rules->add($rules->existsIn('business_id', 'Business'), ['errorField' => 'business_id']);
+
+        return $rules;
     }
 }

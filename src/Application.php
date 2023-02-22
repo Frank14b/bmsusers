@@ -197,9 +197,10 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         // Load identifiers, ensure we check email and password fields
         $authenticationService->loadIdentifier('Authentication.Password', [
             'fields' => [
-                'username' => 'email',
+                'username' => 'login',
                 'password' => 'password',
-            ]
+            ],
+            'columns' => ['username', 'email']
         ]);
 
         // Load the authenticators, you want session first

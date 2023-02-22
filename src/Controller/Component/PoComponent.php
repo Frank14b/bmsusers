@@ -29,6 +29,24 @@ class PoComponent extends Component
         return password_verify($pass, $hash);
     }
 
+    public function passwordValidator($password)
+    {
+        if ($password) {
+            if (
+                preg_match('@[A-Z]@', $password) &&
+                preg_match('@[a-z]@', $password) &&
+                preg_match('@[0-9]@', $password) &&
+                preg_match('@[^\w]@', $password)
+            ) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
     function WordWrap(&$text, $maxwidth)
     {
         $text = trim($text);

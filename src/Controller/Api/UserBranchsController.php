@@ -64,10 +64,10 @@ class UserBranchsController extends BaseApiController
             // check if data send
             // check user business
             $conditions  = ['UserBranchs.user_id' => $this->request->getData('user_id'), 'Users.status' => 1];
-            if ($this->request->getData('business_id') != null) {
+            if (strval($this->request->getData('business_id')) != null) {
                 $conditions = array_merge($conditions, ['Branchs.busines_id' => $this->request->getData('business_id')]);
             }
-            if ($this->request->getData('branch_id') != null) {
+            if (strval($this->request->getData('branch_id')) != null) {
                 $conditions = array_merge($conditions, ['UserBranchs.branch_id' => $this->request->getData('branch_id')]);
             }
             $rsData = $this->UserBranchs->find()->where($conditions)->contain(['Branchs', 'Roles', 'Users']);
@@ -146,75 +146,6 @@ class UserBranchsController extends BaseApiController
             ];
 
             return $this->response->withType('application/json')->withStringBody(json_encode($result));
-        }
-    }
-
-    public function addUserToBranchs($_datas, $user_id) // add user to branchs when creating new user
-    {
-        // $this->request->allowMethod(["OPTIONS", "POST"]);
-
-        $status = false;
-        $message = "";
-        $data = "";
-
-        $all_branchs = $_datas;
-
-        try {
-            //code...
-            // form data
-            // name address check rules
-
-            $nbr_saved = 0;
-
-            foreach($all_branchs as $branch) {
-
-                $empData = $this->UserBranchs->find()->where([
-                    "user_id" => $user_id,
-                    'branch_id' => $branch["branch_id"]
-                ]);
-    
-                if ($empData->count() > 0) {
-                    // already exists
-                    $status = false;
-                    $message .= "User already linked to the branch ".$branch["branch_id"]."; ";
-                } else {
-                    // insert new branch
-                    $empObject = $this->UserBranchs->newEmptyEntity();
-                    $branch["user_id"] = $user_id;
-                    $empObject = $this->UserBranchs->patchEntity($empObject, $branch);
-    
-                    if ($rs = $this->UserBranchs->save($empObject)) {
-                        // success response
-                        $status = true;
-                        $message .= " User has been added to the branch ".$branch["branch_id"]."; ";
-                        $data = $rs;
-
-                        $nbr_saved++;
-                    } else {
-                        // error response
-                        $status = false;
-                        $message = "Failed to add user to the branch";
-                        $data = "";
-                    }
-                }
-            }
-
-            $result = [
-                "status" => $status,
-                "saved" => $nbr_saved,
-                "message" => $message,
-                "data" => $data
-            ];
-
-            return ($result);
-        } catch (\Throwable $th) {
-            //throw $th;
-            $result = [
-                "status" => false,
-                "message" => $th
-            ];
-
-            return ($result);
         }
     }
 

@@ -274,7 +274,7 @@ class UsersController extends BaseApiController
             $array_users_id = [];
 
             $getuserbranchs = $this->UsersCommonController->getUserByBranchs($this->request);
-            if ($getuserbranchs) {
+            if ($getuserbranchs != null) {
                 $array_users_id = array_merge($array_users_id, $getuserbranchs);
             }
 

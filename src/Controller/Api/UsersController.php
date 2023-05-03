@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Controller\AppController;
-use Cake\I18n\I18n;
-use Cake\I18n\Time;
-use Cake\Mailer\Email;
-use Exception;
 use Firebase\JWT\JWT;
 use App\Controller\Api\UserBranchsController;
 use App\Controller\Api\Common\UsersCommonController;
+// use Cake\Http\Exception\BadRequestException;
 
 /**
  * Users Controller
@@ -24,6 +20,7 @@ class UsersController extends BaseApiController
 {
     protected $UserBranchsController;
     protected $UsersCommonController;
+    protected $UsersStatusDto;
 
     public function initialize(): void
     {
@@ -55,12 +52,12 @@ class UsersController extends BaseApiController
                 "email" => $this->request->getData("email")
             ]);
 
-            if (!$this->PO->passwordValidator($this->request->getData("password"))) {
+            if (!$this->UsersPo->passwordValidator($this->request->getData("password"))) {
                 $result = [
                     "status" => $status,
                     "error" => "Password should have at least 1 lowercase letter, 1 uppercase letter, 1 digit, 1 special character, and at least 8 characters long"
                 ];
-                return $this->response->withType('application/json')->withStringBody(json_encode($result));
+                return $this->response->withType('application/json')->withStatus(400)->withStringBody(json_encode($result));
             }
 
             if ($empData->count() > 0) {
@@ -115,7 +112,7 @@ class UsersController extends BaseApiController
                 "error" => $th
             ];
 
-            return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            return $this->response->withType('application/json')->withStatus(400)->withStringBody(json_encode($result));
         }
     }
 
@@ -133,26 +130,29 @@ class UsersController extends BaseApiController
             //code...
             $user = $this->Auth->identify();
             // regardless of POST or GET, redirect if user is logged in
+
+            $result = [
+                "status" => false,
+                "message" => "Couldn't connect email or password invalid"
+            ];
+
             if ($user) {
-                if ($user['status'] == 1) {
-                    $result = [
-                        "status" => true,
-                        "message" => "get user",
-                        "data" => $user,
-                        'token' => $this->generateUserToken($user['id'])
-                    ];
-                } else if ($user['status'] != 2) {
-                    $result = [
-                        "status" => true,
-                        "message" => "Your account is disable please contact admin",
-                        "data" => []
-                    ];
+                if ($user["role"] == 2) {
+                    if ($user['status'] == $this->enable) {
+                        $result = [
+                            "status" => true,
+                            "message" => "get user",
+                            "data" => $user,
+                            'token' => $this->generateUserToken($user['id'], $this->request->getAttributes()["params"]["prefix"])
+                        ];
+                    } else if ($user['status'] != $this->delete) {
+                        $result = [
+                            "status" => true,
+                            "message" => "Your account is disable please contact admin",
+                            "data" => []
+                        ];
+                    }
                 }
-            } else {
-                $result = [
-                    "status" => false,
-                    "message" => "Couldn't connect email or password invalid"
-                ];
             }
 
             return $this->response->withType('application/json')->withStringBody(json_encode($result));
@@ -185,7 +185,7 @@ class UsersController extends BaseApiController
                 "status !=" => 2
             ]);
 
-            if (!$this->PO->passwordValidator($this->request->getData("password"))) {
+            if (!$this->UsersPo->passwordValidator($this->request->getData("password"))) {
                 $result = [
                     "status" => $status,
                     "error" => "Password should have at least 1 lowercase letter, 1 uppercase letter, 1 digit, 1 special character, and at least 8 characters long"
@@ -201,7 +201,7 @@ class UsersController extends BaseApiController
                 // email address check rules
                 $empData = $this->Users->find()->where([
                     "username" => $this->request->getData("username"),
-                    "status !=" => 2
+                    "status !=" => $this->delete
                 ]);
 
                 if ($empData->count() > 0) {
@@ -266,11 +266,55 @@ class UsersController extends BaseApiController
         }
     }
 
+    public function getById()
+    {
+        $this->request->allowMethod(["OPTIONS", "GET"]);
+
+        try {
+            //code...
+            $array_users_id = [];
+
+            $getuserbranchs = $this->UsersCommonController->getUserByBranchs($this->request);
+            if ($getuserbranchs != null) {
+                $array_users_id = array_merge($array_users_id, $getuserbranchs);
+            }
+
+            $getowner = $this->UsersCommonController->getBusinessOwnerByBranchId($this->request);
+            if ($getowner && isset($getowner->busines->user_id)) {
+                array_push($array_users_id, $getowner->busines->user_id);
+            }
+
+            $conditions = [
+                'Users.id' => $this->request->getParam("id"),
+                'Users.id IN' => $array_users_id,
+                'Users.status IN' => (strval($this->request->getData('status')) != null && strval($this->request->getData('status')) != $this->delete) ? [$this->request->getData('status')] : [$this->disable, $this->enable]
+            ];
+
+            //
+            $empData = $this->Users->find()->where($conditions);
+
+            $result = [
+                "status" => true,
+                "message" => "get user",
+                "data" => $empData->first()
+            ];
+
+            return $this->response->withType('application/json')->withStringBody(json_encode($result));
+        } catch (\Throwable $th) {
+            $result = [
+                "status" => false,
+                "message" => "Error or user not found",
+                "err" => $th
+            ];
+            return $this->response->withStatus(400)->withType('application/json')->withStringBody(json_encode($result));
+        }
+    }
+
     public function getAll()
     {
-        try {
-            $this->request->allowMethod(["OPTIONS", "POST"]);
+        $this->request->allowMethod(["OPTIONS", "POST"]);
 
+        try {
             $array_users_id = [];
 
             $getuserbranchs = $this->UsersCommonController->getUserByBranchs($this->request);
@@ -290,7 +334,7 @@ class UsersController extends BaseApiController
             ];
 
             //
-            $empData = $this->Users->find()->where($conditions)->contain(['Branchs', 'BranchOwner']);
+            $empData = $this->Users->find()->where($conditions);
 
             $result = [
                 "status" => true,
@@ -302,16 +346,16 @@ class UsersController extends BaseApiController
         } catch (\Throwable $th) {
             $result = [
                 "status" => false,
-                "message" => "Error or users not found",
+                "message" => "Error or user not found",
                 "err" => $th
             ];
-            return $this->response->withType('application/json')->withStringBody(json_encode($result));
+            return $this->response->withStatus(400)->withType('application/json')->withStringBody(json_encode($result));
         }
     }
 
     public function update()
     {
-        $this->request->allowMethod(["OPTIONS", "POST"]);
+        $this->request->allowMethod(["OPTIONS", "PUT"]);
 
         try {
             if ($this->request->getData("id") == null) {
@@ -373,7 +417,7 @@ class UsersController extends BaseApiController
 
     public function delete()
     {
-        $this->request->allowMethod(["OPTIONS", "POST"]);
+        $this->request->allowMethod(["OPTIONS", "DELETE"]);
 
         try {
             if ($this->request->getData("id") == null) {
@@ -426,15 +470,27 @@ class UsersController extends BaseApiController
         }
     }
 
-    public function generateUserToken($userid)
+    public function generateUserToken($userid, $prefix = "Api")
     {
         $payload = [
             'iss' => 'bmsusers',
             'sub' => $userid,
             'exp' => time() + 3600,
         ];
-        $privateKey = file_get_contents(CONFIG . '/jwt.key');
+
+        $permission_file = "/jwt.key";
+
+        $privateKey = file_get_contents(CONFIG . $permission_file);
 
         return JWT::encode($payload, $privateKey, 'RS256');
+    }
+
+    public function unauthorized()
+    {
+        $result = [
+            "status" => false,
+            "message" => "Not Authorized"
+        ];
+        return $this->response->withType('application/json')->withStringBody(json_encode($result));
     }
 }

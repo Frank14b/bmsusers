@@ -31,7 +31,7 @@ class BusinessController extends BaseApiController
 
     public function getAll()
     {
-        $this->request->allowMethod(["OPTIONS", "POST"]);
+        $this->request->allowMethod(["OPTIONS", "GET"]);
 
         try {
             //code...
@@ -40,27 +40,29 @@ class BusinessController extends BaseApiController
             $rsData = $this->Business->find()->where(
                 [
                     'Business.user_id' => $this->request->getData('user_id'),
-                    'Business.status' => (strval($this->request->getData("status")) != null) ? $this->request->getData("status") : 1
+                    'Business.status' => (strval($this->request->getData("status")) != null) ? $this->request->getData("status") : $this->enable
                 ]
             );
             // check user branchs
-            $userBranch = $this->UserBranchs->find('all', ['fields' => ['branch_id'], 'conditions' => [
+            $userBranch = $this->UserBranchs->find('list', ['field' => ['branch_id'], 'conditions' => [
                 'UserBranchs.user_id' => $this->request->getData('user_id'),
-                'UserBranchs.status' => (strval($this->request->getData("status")) != null) ? $this->request->getData("status") : 1
+                'UserBranchs.status' => (strval($this->request->getData("status")) != null) ? $this->request->getData("status") : $this->enable
             ]]);
 
-            if ($userBranch->count() == 0) {
+            if (sizeof($userBranch->toArray()) == 0) {
                 $userBranch = [0, 0];
             } else {
                 $userBranch = $userBranch->toArray();
             }
 
-            $rsDataJoin = $this->Branchs->find()->where(
-                [
+            $rsDataJoin = $this->Branchs->find('all', [
+                'conditions' => [
                     'Branchs.id IN' => $userBranch,
-                    'Branchs.status' => 1
-                ]
-            )->contain(['Business']);
+                    'Branchs.status' => $this->enable
+                ],
+                'group' => ['Business.id'],
+                'contain' => ['Business']
+            ]);
 
             $result = [
                 "status" => true,
@@ -141,22 +143,21 @@ class BusinessController extends BaseApiController
         }
     }
 
-    public function getbyid()
+    public function getById()
     {
-        try {
-            //code...
-            $this->request->allowMethod(["OPTIONS", "POST"]);
+        $this->request->allowMethod(["OPTIONS", "GET"]);
 
+        try {
             // form data
             // email address check rules
             $empData = $this->Business->find()->where([
-                'Business.id' => $this->request->getData("id"),
-                'Business.status' => 1
+                'Business.id' => $this->request->getParam("id"),
+                'Business.status' => $this->enable
             ]);
 
             $result = [
                 "status" => true,
-                "message" => "get data",
+                "message" => "get business data",
                 "data" => $empData
             ];
 

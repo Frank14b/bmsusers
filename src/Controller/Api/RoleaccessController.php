@@ -36,7 +36,7 @@ class RoleaccessController extends BaseApiController
 
     public function getUserAccess()
     {
-        $this->request->allowMethod(["OPTIONS", "POST"]);
+        $this->request->allowMethod(["OPTIONS", "GET"]);
 
         try {
             //code...
@@ -47,10 +47,10 @@ class RoleaccessController extends BaseApiController
             $user_role = $this->accessCommonController->getUserRoleByBranchID($this->request);
 
             $conditions = [
-                'Roleaccess.status' => ($this->request->getData("status") != null) ? (int) $this->request->getData("status") : 1,
-                'Access.status' => 1,
+                'Roleaccess.status' => (strval($this->request->getQuery("status")) != null) ? (int)$this->request->getQuery("status") : $this->enable,
+                'Access.status' => $this->enable,
                 'Access.coverage' => 1,
-                'Roles.status' => 1,
+                'Roles.status' => $this->enable,
                 'Roles.business_id' => $business_id,
                 'Roleaccess.role_id' => $user_role
             ];
@@ -94,7 +94,7 @@ class RoleaccessController extends BaseApiController
                     ["role_id" => $this->request->getData("role_id")],
                     ["acces_id" => $this->request->getData("acces_id")]
                 ],
-                'status' => 1
+                'status' => $this->enable
             ]);
 
             if ($empData->count() > 0) {

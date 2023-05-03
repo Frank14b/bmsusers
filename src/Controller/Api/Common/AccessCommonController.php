@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 namespace App\Controller\Api\Common;
-
 use App\Controller\AppController;
 
 /**
@@ -28,7 +27,7 @@ class AccessCommonController extends AppController
     {
         try {
             $result = $this->Branchs->find('all', [
-                'conditions' => ['Branchs.id' => $request->getData("branch_id"), 'Branchs.status' => 1],
+                'conditions' => ['Branchs.id' => $request->getData("_user_branch_id"), 'Branchs.status' => 1],
             ]);
             if ($result->count() > 0) {
                 return $result->first()->busines_id;
@@ -43,7 +42,7 @@ class AccessCommonController extends AppController
         try {
             $result = $this->UserBranchs->find('all', [
                 'conditions' => [
-                    'UserBranchs.branch_id' => $request->getData("branch_id"),
+                    'UserBranchs.branch_id' => $request->getData("_user_branch_id"),
                     'Branchs.status' => 1,
                     'UserBranchs.status' => 1,
                     'Roles.status' => 1,
@@ -51,6 +50,7 @@ class AccessCommonController extends AppController
                 ],
                 'contain' => ['Branchs', 'Roles']
             ]);
+
             if ($result->count() > 0) {
                 return $result->first()->role_id;
             } else {

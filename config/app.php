@@ -332,6 +332,14 @@ return [
             //'init' => ['SET GLOBAL innodb_stats_on_metadata = 0'],
         ],
 
+        'cloud' => [
+            'className' => Connection::class,
+            'driver' => Mysql::class,
+            'persistent' => false,
+            'timezone' => 'UTC',
+            //'init' => ['SET GLOBAL innodb_stats_on_metadata = 0'],
+        ],
+
         /*
          * The test connection is used during the test suite.
          */

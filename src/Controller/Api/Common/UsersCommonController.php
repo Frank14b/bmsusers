@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 namespace App\Controller\Api\Common;
-
 use App\Controller\AppController;
 /**
  * Users Common Controller (functions)
@@ -27,25 +26,25 @@ class UsersCommonController extends AppController
     {
         try {
             $conditions = [
-                'UserBranchs.branch_id' => $request->getData("branchs_id"),
+                'UserBranchs.branch_id' => $request->getData("_user_branch_id"),
                 'UserBranchs.status' => 1,
                 'Branchs.busines_id' => $request->getData("business_id"),
                 'Branchs.status' => 1
             ];
 
             // $result = $this->UserBranchs->find()->where($conditions)->contain(['Branchs']);
-            $result = $this->UserBranchs->find("all", [
-                'fields' => ['user_id'],
+            $result = $this->UserBranchs->find("list", [
+                'field' => ['user_id'],
                 'conditions' => $conditions,
                 'contain' => ['Branchs']
             ]);
 
             if($result && $result->count() > 0) {
-                $array_userid = [];
-                foreach($result->toArray() as $usr) {
-                    array_push($array_userid, $usr->user_id);
-                }
-                return $array_userid;
+                // $array_userid = [];
+                // foreach($result->toArray() as $usr) {
+                //     array_push($array_userid, $usr->user_id);
+                // }
+                return $result->toArray(); //$array_userid;
             }else{
                 return null;
             }
@@ -59,7 +58,7 @@ class UsersCommonController extends AppController
         try {
             $result = $this->Branchs->find('all', [
                 'fields' => ['Business.user_id'],
-                'conditions' => ['Branchs.id' => $request->getData("branchs_id"), 'Branchs.status' => 1],
+                'conditions' => ['Branchs.id' => $request->getData("_user_branch_id"), 'Branchs.status' => 1],
                 'contain' => ['Business']
             ]);
             if($result->count() > 0) {

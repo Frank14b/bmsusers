@@ -34,6 +34,7 @@ use Authentication\AuthenticationServiceInterface;
 use Authentication\AuthenticationServiceProviderInterface;
 use Authentication\Middleware\AuthenticationMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
+use App\Middleware\RoleAccessMiddleware;
 
 // Allow from any origin
 if (isset($_SERVER['HTTP_ORIGIN'])) {
@@ -111,6 +112,8 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             // and make an error page/response
             ->add(new ErrorHandlerMiddleware(Configure::read('Error')))
 
+            ->add(new RoleAccessMiddleware($this))
+
             // Handle plugin/theme assets like CakePHP normally does.
             ->add(new AssetMiddleware([
                 'cacheTime' => Configure::read('Asset.cacheTime'),
@@ -145,6 +148,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
                     ->withHeader('Access-Control-Allow-Type', 'application/json')
                     ->withStatus(200);
             });
+            
         // Cross Site Request Forgery (CSRF) Protection Middleware
         // https://book.cakephp.org/4/en/security/csrf.html#cross-site-request-forgery-csrf-middleware
         // ->add(new CsrfProtectionMiddleware([
@@ -163,6 +167,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
      */
     public function services(ContainerInterface $container): void
     {
+        
     }
 
     /**
@@ -187,9 +192,20 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             // 'queryParam' => 'redirect',
         ]);
 
+        if(!isset($request->getAttributes()["params"]["prefix"])) {
+            echo "Invalid Request! Route Not Found";
+            die();
+        }
+
+        if($request->getAttributes()["params"]["prefix"] == "Api/admin") {
+            $permission_file = "Admin-jwt/jwt.pem";
+        }else{
+            $permission_file = "jwt.pem";
+        }
+
         $authenticationService->loadIdentifier('Authentication.JwtSubject');
         $authenticationService->loadAuthenticator('Authentication.Jwt', [
-            'secretKey' => file_get_contents(CONFIG . '/jwt.pem'),
+            'secretKey' => file_get_contents(CONFIG . '/'.$permission_file),
             'algorithm' => 'RS256',
             'returnPayload' => false
         ]);

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
-use App\Controller\Api/AccessController;
+use App\Controller\API\AccessController;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -12,7 +12,7 @@ use Cake\TestSuite\TestCase;
  *
  * @uses \App\Controller\Api/AccessController
  */
-class Api/AccessControllerTest extends TestCase
+class AccessControllerTest extends TestCase
 {
     use IntegrationTestTrait;
 }
